@@ -45,3 +45,14 @@ def save_csv(lst, path):
                 writer.writerow(elem)
     except IOError:
         print("I/O error")
+
+
+def load_csv(path):
+    try:
+        with open(path, 'r', newline='', encoding='utf-8') as csvfile:
+            reader = csv.DictReader(csvfile)
+            ports = [row for row in reader]
+    except IOError:
+        print("I/O error")
+
+    return ports
