@@ -1,16 +1,17 @@
 import requests
-import json
+from fake_useragent import UserAgent
 import re
 import time
 from bs4 import BeautifulSoup
+from retry_decorator import *
 
+# Local imports
 from exceptions import ScraperException
 
 
 main_url = 'https://www.myshiptracking.com'
-user_agent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36'
 table_types = ["port_database", "inport", "arrivals", "port_calls", "event"]
-DEFAULT_WAITING_TIME = 0.1
+DEFAULT_WAITING_TIME = 0.5
 
 
 def __get_total_pages(soup):
@@ -179,11 +180,14 @@ def __row_info_extraction(row, type="port_database"):
         raise ValueError("Invalid value for parameter 'type'")
 
 
+@retry(Exception, tries=5, timeout_secs=5)
 def __table_info_extraction(url, type="port_database"):
     base_url = url
-    header = {'User-Agent': user_agent}
+    ua = UserAgent()
 
+    header = {'User-Agent': ua.random}
     page = requests.get(base_url, headers=header)
+
     soup = BeautifulSoup(page.content, 'html.parser')
     try:
         pages = __get_total_pages(soup)
@@ -195,6 +199,8 @@ def __table_info_extraction(url, type="port_database"):
         print(f"Analyzing page {i} of {pages}")
         if i > 1:
             base_url = url + '&page=' + str(i)
+
+            header = {'User-Agent': ua.random}
             page = requests.get(base_url, headers=header)
             soup = BeautifulSoup(page.content, 'html.parser')
 
